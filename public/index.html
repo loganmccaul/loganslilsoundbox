@@ -16,19 +16,31 @@
 	<p class="user-count">Number of users connected: <span id="userCount">0</span></p>
 	<div id="container" class="clearfix">
 	</div>
+  <div class="instructions__container">
+    <div class="instructions">
+      Lil' Sound Box is an oscillator made with the Web Audio API and Socket.io. Click anywhere in the canvas to produce a sound!
+      <button id="instructions-dismiss">Get Started</button>
+    </div>
+  </div>
 	<script>
 		var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 		var sounds = [];
 		var notes = [];
 		var socket = io();
-		
+
+    const getStarted = document.getElementById('instructions-dismiss');
+    getStarted.addEventListener('click', () => {
+      document.querySelector('.instructions__container').classList.add('instructions--hidden');
+      audioCtx.resume();
+    });
+
 		//LEARN THIS
 		function transpose(a) {
     return Object.keys(a[0]).map(
         function (c) { return a.map(function (r) { return r[c]; }); }
         );
     }
-		
+
 		function checkState() {
 			if(this.style.backgroundColor == "rgb(255, 255, 255)") {
 				var i = this.dataset.index;
@@ -46,7 +58,7 @@
 				this.style.backgroundColor = "rgb(255, 255, 255)";
 			}
 		}
-		
+
 		function play() {
 			var i = this.dataset.index;
 			socket.emit('getStartNote', i);
@@ -56,15 +68,15 @@
 			var b = Math.floor(Math.random()*255);
 			this.style.backgroundColor = "rgb("+r+", "+g+", "+b+")";
 		}
-		
+
 		function pause() {
 			var i = this.dataset.index;
 			socket.emit('getStopNote', i);
 			//sounds[i][0].gain.setTargetAtTime(0.0, audioCtx.currentTime + .25, .05);
 			this.style.backgroundColor = "rgb(255, 255, 255)";
 		}
-		
-		function init() {			
+
+		function init() {
 			var notesRow = [];
 			for(var i = 0; i <= 399; i++) {
 				var newBox = document.createElement('div');
@@ -73,19 +85,19 @@
 				newBox.setAttribute('id', i);
 				newBox.style.backgroundColor = "rgb(255, 255, 255)";
 				newBox.style.opacity = 1;
-				
+
 				document.getElementById('container').appendChild(newBox);
 				//newBox.addEventListener('mouseover', play);
 				//newBox.addEventListener('mouseleave', pause);
 				newBox.addEventListener('click', checkState);
-				
+
 				notesRow.push(i);
-				
+
 				if(notesRow.length % 20 == 0) {
 					notes.push(notesRow);
 					notesRow = [];
 				}
-				
+
 				var gain = audioCtx.createGain();
 				var oscillator = audioCtx.createOscillator();
 				oscillator.type = 'triangle';
@@ -94,12 +106,12 @@
 				oscillator.connect(gain);
 				gain.connect(audioCtx.destination);
 				oscillator.start(0);
-				
+
 				sounds.push([gain, oscillator]);
 			}
-			
+
 			notes = transpose(notes);
-			
+
 			var row = 0;
 			setInterval(function() {
 				var lastRow = row - 1;
@@ -117,18 +129,18 @@
 				row++;
 				if(row == notes.length) row = 0;
 			}, 100);
-			
+
 			document.getElementById('reset').addEventListener('click', function() {
 				for(var i = 0; i < 400; i++) {
 					document.getElementById(i).style.backgroundColor = "rgb(255, 255, 255)";
 					socket.emit('getStopNote', i);
 				}
 			});
-			
+
 		}
-		
+
 		socket.emit('getSetSounds');
-		
+
 		socket.on('setSounds', function(s) {
 			for(var i = 0; i < s.length; i++) {
 				if(s[i] === 1) {
@@ -139,7 +151,7 @@
 				}
 			}
 		});
-		
+
 		socket.on('startNote', function(note) {
 			var r = Math.floor(Math.random()*255);
 			var g = Math.floor(Math.random()*255);
@@ -149,7 +161,7 @@
 		socket.on('stopNote', function(note) {
 			document.getElementById(note).style.backgroundColor = "rgb(255, 255, 255)";
 		});
-		
+
 		socket.on('userCountChange', function(count) {
 			document.getElementById('userCount').innerHTML = count;
 		});
