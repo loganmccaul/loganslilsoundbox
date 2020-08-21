@@ -1,0 +1,5 @@
+applications:
+- buildpack: sdk-for-nodejs
+  name: loganslilsoundbox
+  random-route: true
+  memory: 128M
